@@ -194,7 +194,7 @@ def run_test_iteration(test_status, test_loader, test_source_kwargs, test_source
                                                       run_info,
                                                       **run_test_kwargs)
 
-        if executor_cls is None:
+        if executor_cls is None and len(tests_to_run) > 0:
             logger.error(f"Unsupported test type {test_type} for product {product.name}")
             continue
 
@@ -243,6 +243,7 @@ def run_test_iteration(test_status, test_loader, test_source_kwargs, test_source
                        run_tests.append(test)
                 tests = run_tests
 
+            print(test_executor_kwargs["capabilities"])
             recording.pause()
             with ManagerGroup("web-platform-tests",
                             run_test_kwargs["processes"],
