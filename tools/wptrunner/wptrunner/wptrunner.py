@@ -4,7 +4,6 @@ import json
 import os
 import sys
 from datetime import datetime, timedelta
-from urllib.parse import urljoin
 
 import wptserve
 from wptserve import sslutils
@@ -176,7 +175,7 @@ def run_test_iteration(test_status, test_loader, test_source_kwargs, test_source
                        run_info=run_info,
                        extra={"run_by_dir": run_test_kwargs["run_by_dir"]})
     for test_type in run_test_kwargs["test_types"]:
-        tests_to_run = test_loader.tests[test_type]
+        logger.info(f"Running {test_type} tests")
 
         browser_cls = product.get_browser_cls(test_type)
 
@@ -194,7 +193,7 @@ def run_test_iteration(test_status, test_loader, test_source_kwargs, test_source
                                                       run_info,
                                                       **run_test_kwargs)
 
-        if executor_cls is None and len(tests_to_run) > 0:
+        if executor_cls is None:
             logger.error(f"Unsupported test type {test_type} for product {product.name}")
             continue
 
@@ -203,72 +202,44 @@ def run_test_iteration(test_status, test_loader, test_source_kwargs, test_source
             logger.test_end(test.id, status="SKIP")
             test_status.skipped += 1
 
-        tests_with_capabilities = {}
-        for test in tests_to_run:
-            test_capabilities = None
-            hash = ''
-            if test.pac is not None:
-                pac = urljoin(f'http://{test_environment.config["browser_host"]}:{test_environment.config["ports"]["http"][0]}', test.pac)
-                test_capabilities = {
-                    "proxy": {
-                        "proxyType": "pac",
-                        "proxyAutoconfigUrl": pac
-                    }
-                }
+        if test_type == "testharness":
+            run_tests = {"testharness": []}
+            for test in test_loader.tests["testharness"]:
+                if ((test.testdriver and not executor_cls.supports_testdriver) or
+                        (test.jsshell and not executor_cls.supports_jsshell)):
+                    logger.test_start(test.id)
+                    logger.test_end(test.id, status="SKIP")
+                    test_status.skipped += 1
+                else:
+                    run_tests["testharness"].append(test)
+        else:
+            run_tests = test_loader.tests
 
-                hash = json.dumps(test_capabilities)
-            if hash not in tests_with_capabilities:
-                tests_with_capabilities[hash] = ([], test_capabilities)
-            tests_with_capabilities[hash][0].append(test)
-
-        for (hash, (tests, capabilities)) in tests_with_capabilities.items():
-            test_executor_kwargs = executor_kwargs
-
-            if capabilities is None:
-                logger.info(f"Running {test_type} tests")
-            else:
-                logger.info(f"Running {test_type} tests with {hash}")
-                test_executor_kwargs = test_executor_kwargs.copy()
-                test_executor_kwargs["capabilities"] = test_executor_kwargs["capabilities"] | capabilities
-
-            if test_type == "testharness":
-                run_tests = []
-                for test in tests:
-                    if ((test.testdriver and not executor_cls.supports_testdriver) or
-                            (test.jsshell and not executor_cls.supports_jsshell)):
-                        logger.test_start(test.id)
-                        logger.test_end(test.id, status="SKIP")
-                        test_status.skipped += 1
-                    else:
-                       run_tests.append(test)
-                tests = run_tests
-
-            print(test_executor_kwargs["capabilities"])
-            recording.pause()
-            with ManagerGroup("web-platform-tests",
-                            run_test_kwargs["processes"],
-                            test_source_cls,
-                            test_source_kwargs,
-                            browser_cls,
-                            browser_kwargs,
-                            executor_cls,
-                            test_executor_kwargs,
-                            run_test_kwargs["rerun"],
-                            run_test_kwargs["pause_after_test"],
-                            run_test_kwargs["pause_on_unexpected"],
-                            run_test_kwargs["restart_on_unexpected"],
-                            run_test_kwargs["debug_info"],
-                            not run_test_kwargs["no_capture_stdio"],
-                            recording=recording) as manager_group:
-                try:
-                    manager_group.run(test_type, {test_type: tests})
-                except KeyboardInterrupt:
-                    logger.critical("Main thread got signal")
-                    manager_group.stop()
-                    raise
-                test_status.total_tests += manager_group.test_count()
-                test_status.unexpected += manager_group.unexpected_count()
-                test_status.unexpected_pass += manager_group.unexpected_pass_count()
+        recording.pause()
+        with ManagerGroup("web-platform-tests",
+                          run_test_kwargs["processes"],
+                          test_source_cls,
+                          test_source_kwargs,
+                          browser_cls,
+                          browser_kwargs,
+                          executor_cls,
+                          executor_kwargs,
+                          run_test_kwargs["rerun"],
+                          run_test_kwargs["pause_after_test"],
+                          run_test_kwargs["pause_on_unexpected"],
+                          run_test_kwargs["restart_on_unexpected"],
+                          run_test_kwargs["debug_info"],
+                          not run_test_kwargs["no_capture_stdio"],
+                          recording=recording) as manager_group:
+            try:
+                manager_group.run(test_type, run_tests)
+            except KeyboardInterrupt:
+                logger.critical("Main thread got signal")
+                manager_group.stop()
+                raise
+            test_status.total_tests += manager_group.test_count()
+            test_status.unexpected += manager_group.unexpected_count()
+            test_status.unexpected_pass += manager_group.unexpected_pass_count()
 
     return True
 
