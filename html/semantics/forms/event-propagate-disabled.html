@@ -80,7 +80,9 @@
     const controller = new AbortController();
     const { signal } = controller;
     const listenerFn = t.step_func(event => observedEvents.push(event.type));
-    allEvents.forEach(event => observingElement.addEventListener(event, listenerFn, { signal }));
+    for (const event of allEvents) {
+      observingElement.addEventListener(event, listenerFn, { signal });
+    }
     t.add_cleanup(() => controller.abort());
 
     const target = getEventFiringTarget(element);
@@ -109,33 +111,35 @@
     }
   }
 
+  const mouseEvents = ["mousemove", "mousedown", "mouseup", "click"];
+  const pointerEvents = ["pointermove", "pointerdown", "pointerup"];
+
   const elements = document.getElementById("cases").children;
   for (const element of elements) {
     promise_event_test({
       element,
-      expectedEvents: ["pointermove", "pointerdown", "pointerup"],
+      expectedEvents: pointerEvents,
       nonDisabledExpectedEvents: allEvents,
       clickerFn: test_driver.click,
       title: "Trusted click"
     })
 
-    for (const event of ["mousemove", "mousedown", "mouseup", "click"]) {
-      promise_event_test({
-        element,
-        expectedEvents: [event],
-        nonDisabledExpectedEvents: [event],
-        clickerFn: target => target.dispatchEvent(new MouseEvent(event, { bubbles: true })),
-        title: `Dispatch new MouseEvent("${event}")`
-      })
-    }
+    const eventFirePair = [
+      [MouseEvent, mouseEvents],
+      [PointerEvent, pointerEvents]
+    ];
 
-    for (const event of ["pointermove", "pointerdown", "pointerup"]) {
+    for (const [eventInterface, events] of eventFirePair) {
       promise_event_test({
         element,
-        expectedEvents: [event],
-        nonDisabledExpectedEvents: [event],
-        clickerFn: target => target.dispatchEvent(new PointerEvent(event, { bubbles: true })),
-        title: `Dispatch new PointerEvent("${event}")`
+        expectedEvents: events,
+        nonDisabledExpectedEvents: events,
+        clickerFn: target => {
+          for (const event of events) {
+            target.dispatchEvent(new eventInterface(event, { bubbles: true }))
+          }
+        },
+        title: `Dispatch new ${eventInterface.name}("${event}")`
       })
     }
 
