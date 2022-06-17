@@ -2751,7 +2751,7 @@
         var remaining = Math.ceil(timeout_full / interval);
         var test_this = this;
 
-        function step(result) {
+        const step = test_this.step_func((result) => {
             if (result) {
                 func();
             } else {
@@ -2762,11 +2762,11 @@
                 remaining--;
                 setTimeout(wait_for_inner, interval);
             }
-        }
+        });
 
         var wait_for_inner = test_this.step_func(() => {
             Promise.resolve(cond()).then(
-                test_this.step_func(step),
+                step,
                 test_this.unreached_func("step_wait_func"));
         });
 
