@@ -2765,13 +2765,9 @@
         }
 
         var wait_for_inner = test_this.step_func(() => {
-            const result = cond();
-            if (result instanceof Promise) {
-                result.then(test_this.step_func(step),
-                            test_this.unreached_func("step_wait_func"));
-            } else {
-                step(result);
-            }
+            Promise.resolve(cond()).then(
+                test_this.step_func(step),
+                test_this.unreached_func("step_wait_func"));
         });
 
         wait_for_inner();
