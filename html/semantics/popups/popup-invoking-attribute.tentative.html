@@ -117,10 +117,10 @@ const invokers = [
       s_set.forEach(s => {
         h_set.forEach(h => {
           promise_test(async test => {
-            const popup1 = Object.assign(document.createElement('div'),{popup: type, id: 'popup-1'});
-            const popup2 = Object.assign(document.createElement('div'),{popup: type, id: 'popup-2'});
-            assert_equals(popup1.popup,type);
-            assert_equals(popup2.popup,type);
+            const popup1 = Object.assign(document.createElement('div'),{popUp: type, id: 'popup-1'});
+            const popup2 = Object.assign(document.createElement('div'),{popUp: type, id: 'popup-2'});
+            assert_equals(popup1.popUp,type);
+            assert_equals(popup2.popUp,type);
             assert_not_equals(popup1.id,popup2.id);
             const invoker = testcase.makeElement(test);
             if (t) invoker.setAttribute('togglepopup',t===1 ? popup1.id : popup2.id);

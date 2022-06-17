@@ -154,11 +154,11 @@
       priorFocus.focus();
       popup.showPopup();
       assert_equals(document.activeElement, expectedFocusedElement, `${testName} activated by popup.showPopup()`);
-      assert_equals(popup.popup, 'auto', 'All popups in this test should start as popup=auto');
-      popup.popup = 'hint';
+      assert_equals(popup.popUp, 'auto', 'All popups in this test should start as popup=auto');
+      popup.popUp = 'hint';
       assert_false(popup.matches(':top-layer'), 'Changing the popup type should hide the popup');
       assert_equals(document.activeElement, priorFocus, 'prior element should get focus when the type is changed');
-      popup.popup = 'auto';
+      popup.popUp = 'auto';
 
       // Remove from the document:
       priorFocus.focus();
