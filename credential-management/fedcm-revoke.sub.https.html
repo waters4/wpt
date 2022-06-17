@@ -14,6 +14,7 @@
     const provider = {
       url: provider_url || url_prefix,
       clientId: "1234",
+      nonce: '1',
     };
     return await navigator.credentials.get({
       federated:  {
@@ -24,12 +25,12 @@
 
   promise_test(async t => {
     await set_fedcm_cookie();
-    await (await getCredential()).login({nonce: '1'});
-    await (await getCredential()).revoke("1234");
+    const cred = await getCredential();
+    await cred.revoke("1234");
 
     // Second revoke should now fail since the first revoke should revoke
     // the permission.
-    const result = (await getCredential()).revoke("1234");
+    const result = cred.revoke("1234");
     return promise_rejects_dom(t, "NetworkError", result);
   }, "Successfully revoking a token should resolve the promise.");
 
@@ -37,7 +38,6 @@
     // Have to first login or the request will be rejected before it reaches
     // the server.
     await set_fedcm_cookie();
-    await (await getCredential()).login({nonce: '1'});
     await (await getCredential()).revoke("1234");
 
     const result = (await getCredential()).revoke("fail");
