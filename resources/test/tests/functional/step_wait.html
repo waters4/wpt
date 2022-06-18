@@ -28,7 +28,7 @@ promise_test(async t => {
 
 promise_test(async t => {
   function wait(ms) {
-    return new Promise(resolve => step_timeout(resolve, ms)); 
+    return new Promise(resolve => step_timeout(resolve, ms));
   }
   let x = 1;
   step_timeout(() => {
