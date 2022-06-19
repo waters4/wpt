@@ -3,8 +3,7 @@
 <script src=/resources/testharness.js></script>
 <script src=/resources/testharnessreport.js></script>
 <script src=/common/utils.js></script>
-<iframe id="iframe" allowpaymentrequest></iframe>
-<script>
+<iframe id="iframe" allowpaymentrequest></iframe><
 async_test((t) => {
   const iframe = document.getElementById('iframe');
   const paymentArgs = [[{supportedMethods: 'foo'}], {total: {label: 'label', amount: {currency: 'USD', value: '5.00'}}}];
